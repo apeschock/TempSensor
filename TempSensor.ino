@@ -1,69 +1,5 @@
 #include <LiquidCrystal.h>
-
-//all the byte data to display the numbers
-byte nums[10][4][8] = {
-{
-{  B00111,  B01111,  B11000,  B11000,  B11000,  B11000,  B11000,  B11001
-  },{  B11011,  B11111,  B11110,  B11100,  B11000,  B11000,  B01111,  B00111
-  },{  B11100,  B11110,  B00011,  B00011,  B00111,  B01111,  B11111,  B11011
-  },{  B10011,  B00011,  B00011,  B00011,  B00011,  B00011,  B11110,  B11100
-  }
-},{
-{  B00001,  B00011,  B00111,  B00111,  B00001,  B00001,  B00001,  B00001
-  },{  B00001,  B00001,  B00001,  B00001,  B00001,  B00001,  B00111,  B00111
-  },{  B10000,  B10000,  B10000,  B10000,  B10000,  B10000,  B10000,  B10000
-  },{  B10000,  B10000,  B10000,  B10000,  B10000,  B10000,  B11100,  B11100
-  }
-},{
-{  B00111,  B01111,  B11100,  B11000,  B00000,  B00000,  B00000,  B00000
-  },{  B00000,  B00001,  B00011,  B00110,  B01100,  B11000,  B11111,  B11111
-  },{  B11100,  B11110,  B00111,  B00011,  B00011,  B00011,  B00110,  B01100
-  },{  B11000,  B10000,  B00000,  B00000,  B00000,  B00000,  B11111,  B11111
-  }
-},{
-{  B11111,  B11111,  B00000,  B00000,  B00000,  B00001,  B00001,  B00000
-  },{  B00000,  B00000,  B00000,  B00000,  B11000,  B11100,  B01111,  B00111
-  },{  B11111,  B11111,  B01110,  B11100,  B11000,  B10000,  B11100,  B01110
-  },{  B00111,  B00011,  B00011,  B00011,  B00011,  B00111,  B11110,  B11100
-  }
-},{
-{  B00000,  B00000,  B00001,  B00011,  B00110,  B01100,  B11000,  B11000
-  },{  B11111,  B11111,  B00000,  B00000,  B00000,  B00000,  B00000,  B00000
-  },{  B01100,  B11100,  B11100,  B01100,  B01100,  B01100,  B01100,  B01100
-  },{  B11111,  B11111,  B01100,  B01100,  B01100,  B01100,  B01100,  B01100
-  }
-},{
-{  B11111,  B11111,  B11000,  B11000,  B11000,  B11000,  B11111,  B11111
-  },{  B00000,  B00000,  B00000,  B00000,  B11000,  B11100,  B01111,  B00111
-  },{  B11111,  B11111,  B00000,  B00000,  B00000,  B00000,  B11100,  B11110
-  },{  B00011,  B00011,  B00011,  B00011,  B00011,  B00111,  B11110,  B11100
-  }
-},{
-{  B00001,  B00011,  B00110,  B01100,  B11000,  B11000,  B11000,  B11111
-  },{  B11111,  B11000,  B11000,  B11000,  B11000,  B11000,  B01111,  B00111
-  },{  B11100,  B11100,  B00000,  B00000,  B00000,  B00000,  B00000,  B11110
-  },{  B11111,  B00011,  B00011,  B00011,  B00011,  B00011,  B11110,  B11100
-  }
-},{
-{  B11111,  B11111,  B00000,  B00000,  B00000,  B00000,  B00000,  B00001
-  },{  B00011,  B00111,  B01110,  B01100,  B01100,  B01100,  B01100,  B01100
-  },{  B11111,  B11111,  B00011,  B00011,  B00111,  B01110,  B11100,  B11000
-  },{  B10000,  B00000,  B00000,  B00000,  B00000,  B00000,  B00000,  B00000
-  }
-},{
-{  B00111,  B01111,  B11000,  B11000,  B11000,  B11000,  B11000,  B00111
-  },{  B00111,  B11000,  B11000,  B11000,  B11000,  B11000,  B01111,  B00111
-  },{  B11100,  B11110,  B00011,  B00011,  B00011,  B00011,  B00011,  B11100
-  },{  B11100,  B00011,  B00011,  B00011,  B00011,  B00011,  B11110,  B11100
-  }
-},{
-{  B00111,  B01111,  B11000,  B11000,  B11000,  B11000,  B11000,  B11111
-  },{  B01111,  B00000,  B00000,  B00000,  B00000,  B00000,  B00111,  B00111
-  },{  B11100,  B11110,  B00011,  B00011,  B00011,  B00011,  B00011,  B11111
-  },{  B11111,  B00011,  B00011,  B00011,  B00110,  B01100,  B11000,  B10000
-  }
-}
-};
+#include "NumbersData.h"
 
 //flag for interior temperature display
 const bool intTempDisp = true;
@@ -104,25 +40,23 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(button), changeUnit, FALLING);
 }
 
-float tempC;
-float tempF;
-float tempDisp = 0;
-if(intTempDisp)
-  float inTemp;
 boolean unitF = true;
 
 void loop() {
   //read sensor and store temps
   //TODO: celcius on inside sensor
-  tempC = analogRead(outSensor) * (5.0/1024.0);
+  float tempC = analogRead(outSensor) * (5.0/1024.0);
   tempC = ((tempC - .5)*100.0);
-  tempF = (tempC * 9.0/5.0) + 32.0;
+  float tempF = (tempC * 9.0/5.0) + 32.0;
+
+  float inTemp;
   if(intTempDisp){
     inTemp = analogRead(inSensor) * (5.0/1024.0);
     inTemp = ((inTemp - .5)*100.0);
     inTemp = (inTemp * 9.0/5.0) + 32.0;
   }
-  
+
+  float tempDisp;
   if(unitF){
     if(tempDisp != tempF){
       tempDisp = tempF;
@@ -137,14 +71,11 @@ void loop() {
   
   //Get the different digits in an array
   int *outDigits = getValues((int)tempDisp);
-  if(intTempDisp){
-    int *inDigits = getValues((int)inTemp);
-  }
 
   //write screen every iteration incase of temp change, will sleep for a while to cut power.
   writeScreen(outDigits);
   if(intTempDisp){
-    writeInTemp(inDigits);
+    writeInTemp((int)inTemp);
   }
   
   //Can sleep while waiting for an update if the screen doesn't need updated continuously.
@@ -224,10 +155,20 @@ void writeScreen(int outDig[]){
   }
 }
 
-void writeInTemp(int inDig[]){
-  //add the interior temp
-  for(int i=0; i<2; ++i){
-    lcd.setCursor(i+6,1); //+6 offset for right side
-    lcd.write(inDig[i]);
+void writeInTemp(int inTemp){
+  //add the interior temp to screen
+  int horiOffset = 6; //horizontal offset 6 moves to right side of screen
+  int vertOffset = 1; //vertical offset 1 for lower row
+  lcd.setCursor(horiOffset,vertOffset);
+  if(inTemp < 100 && inTemp > -10){
+    lcd.write(inTemp);
+    return;
+  }
+  if(inTemp >= 100){
+    lcd.write("99");
+    return;
+  }
+  if(inTemp <= -10){
+    lcd.write("-0");
   }
 }
