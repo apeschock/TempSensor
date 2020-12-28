@@ -65,6 +65,10 @@ byte nums[10][4][8] = {
 }
 };
 
+//flag for interior temperature display
+const bool intTempDisp = true;
+
+//pin declarations
 const int button = 2;
 const int inSensor = A4;
 const int outSensor = A2;
@@ -103,7 +107,8 @@ void setup() {
 float tempC;
 float tempF;
 float tempDisp = 0;
-float inTemp;
+if(intTempDisp)
+  float inTemp;
 boolean unitF = true;
 
 void loop() {
@@ -112,10 +117,12 @@ void loop() {
   tempC = analogRead(outSensor) * (5.0/1024.0);
   tempC = ((tempC - .5)*100.0);
   tempF = (tempC * 9.0/5.0) + 32.0;
-  inTemp = analogRead(inSensor) * (5.0/1024.0);
-  inTemp = ((inTemp - .5)*100.0);
-  inTemp = (inTemp * 9.0/5.0) + 32.0;
-
+  if(intTempDisp){
+    inTemp = analogRead(inSensor) * (5.0/1024.0);
+    inTemp = ((inTemp - .5)*100.0);
+    inTemp = (inTemp * 9.0/5.0) + 32.0;
+  }
+  
   if(unitF){
     if(tempDisp != tempF){
       tempDisp = tempF;
@@ -130,11 +137,16 @@ void loop() {
   
   //Get the different digits in an array
   int *outDigits = getValues((int)tempDisp);
-  int *inDigits = getValues((int)inTemp);
-  
-  //write screen every iteration incase of temp change, will sleep for a while to cut power.
-  writeScreen(outDigits, inDigits);
+  if(intTempDisp){
+    int *inDigits = getValues((int)inTemp);
+  }
 
+  //write screen every iteration incase of temp change, will sleep for a while to cut power.
+  writeScreen(outDigits);
+  if(intTempDisp){
+    writeInTemp(inDigits);
+  }
+  
   //Can sleep while waiting for an update if the screen doesn't need updated continuously.
   //Make this a real sleep for the cpu
   if(tempDisp < 102){
@@ -167,7 +179,7 @@ void changeUnit(){
   unitF = !unitF;
 }
 
-void writeScreen(int outDig[], int inDig[]){
+void writeScreen(int outDig[]){
   //set the custom chars
   //first digit will be a zero if not needed.
   if(outDig[0] == 1 || outDig[0] == -1){
@@ -200,11 +212,6 @@ void writeScreen(int outDig[], int inDig[]){
         }
       }
     }
-    //add the interior temp
-    for(int i=0; i<2; ++i){
-      lcd.setCursor(i+6,1); //+6 offset for right side
-      lcd.write(inDig[i]);
-    }
     
     //add the units display
     lcd.setCursor(5,0);
@@ -214,5 +221,13 @@ void writeScreen(int outDig[], int inDig[]){
       lcd.write("F");
     else
       lcd.write("C");
+  }
+}
+
+void writeInTemp(int inDig[]){
+  //add the interior temp
+  for(int i=0; i<2; ++i){
+    lcd.setCursor(i+6,1); //+6 offset for right side
+    lcd.write(inDig[i]);
   }
 }
