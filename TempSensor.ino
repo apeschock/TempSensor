@@ -44,9 +44,11 @@ boolean unitF = true;
 
 void loop() {
   //read sensor and store temps
-  float tempC = analogRead(outSensor) * (5.0/1024.0);
-  tempC = ((tempC - .5)*100.0);
-  float tempF = (tempC * 9.0/5.0) + 32.0;
+  float tempOut = analogRead(outSensor) * (5.0/1024.0);
+  tempOut = ((tempOut - .5)*100.0);
+  if(unitF){
+    tempOut = (tempOut * 9.0/5.0) + 32.0;
+  }
 
   float inTemp;
   if(intTempDisp){
@@ -56,22 +58,9 @@ void loop() {
       inTemp = (inTemp * 9.0/5.0) + 32.0;
     }
   }
-
-  float tempDisp;
-  if(unitF){
-    if(tempDisp != tempF){
-      tempDisp = tempF;
-      //write to screen later
-    }
-  }else{
-    if(tempDisp != tempC){
-      tempDisp = tempC;
-      //write to screen later
-    }
-  }
   
   //Get the different digits in an array
-  int *outDigits = getValues((int)tempDisp);
+  int *outDigits = getValues((int)tempOut);
 
   //write screen every iteration incase of temp change, will sleep for a while to cut power.
   writeScreen(outDigits);
@@ -81,7 +70,7 @@ void loop() {
   
   //TODO Can sleep while waiting for an update if the screen doesn't need updated continuously.
   //Make this a real sleep for the cpu
-  if(tempDisp < 102){
+  if(tempOut < 102){
     delay(1000);
   }else{
     //if 3 numbers need displayed, have to update screen continuously, cannot sleep
