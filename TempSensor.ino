@@ -66,7 +66,8 @@ byte nums[10][4][8] = {
 };
 
 const int button = 2;
-const int sensor = A4;
+const int inSensor = A4;
+const int outSensor = A2;
 const int lcdRs = 3;
 const int lcdEn = 4;
 const int lcd4 = 5;
@@ -81,7 +82,8 @@ void setup() {
 
   //set up pins
   pinMode(button, INPUT_PULLUP);
-  pinMode(sensor, INPUT);
+  pinMode(inSensor, INPUT);
+  pinMode(outSensor, INPUT);
   pinMode(lcdRs, OUTPUT);
   pinMode(lcdEn, OUTPUT);
   pinMode(lcd4, OUTPUT);
@@ -101,14 +103,18 @@ void setup() {
 float tempC;
 float tempF;
 float tempDisp = 0;
+float inTemp;
 boolean unitF = true;
-int digits[3];
 
 void loop() {
   //read sensor and store temps
-  tempC = analogRead(sensor) * (5.0/1024.0);
+  //TODO: celcius on inside sensor
+  tempC = analogRead(outSensor) * (5.0/1024.0);
   tempC = ((tempC - .5)*100.0);
   tempF = (tempC * 9.0/5.0) + 32.0;
+  inTemp = analogRead(inSensor) * (5.0/1024.0);
+  inTemp = ((inTemp - .5)*100.0);
+  inTemp = (inTemp * 9.0/5.0) + 32.0;
 
   if(unitF){
     if(tempDisp != tempF){
@@ -123,10 +129,11 @@ void loop() {
   }
   
   //Get the different digits in an array
-  getValues((int)tempDisp);
+  int *outDigits = getValues((int)tempDisp);
+  int *inDigits = getValues((int)inTemp);
   
   //write screen every iteration incase of temp change, will sleep for a while to cut power.
-  writeScreen(digits);
+  writeScreen(outDigits, inDigits);
 
   //Can sleep while waiting for an update if the screen doesn't need updated continuously.
   //Make this a real sleep for the cpu
@@ -137,17 +144,22 @@ void loop() {
   }
 }
 
-//split number into digits and store that in global digits array
-//if negative, first value is -1, then invert to find digits
-void getValues(int orig){
+//split number into separate digits
+//if negative, first value is -1
+int * getValues(int orig){
+  int digits [3];
+  
   if(orig < 0){
     digits[0] = -1;
     orig *= -1;
+  }else{
+    digits[0] = 0;
   }
-  for(int i=2; i>=0; ++i){
+  for(int i=2; i>=0; --i){
     digits[i] = orig % 10;
     orig /= 10;
   }
+  return digits;
 }
 
 void changeUnit(){
@@ -155,10 +167,10 @@ void changeUnit(){
   unitF = !unitF;
 }
 
-void writeScreen(int dig[]){
+void writeScreen(int outDig[], int inDig[]){
   //set the custom chars
   //first digit will be a zero if not needed.
-  if(dig[0] == 1 || dig[0] == -1){
+  if(outDig[0] == 1 || outDig[0] == -1){
     //displaying 3 digits or negative sign
     
   }else{
@@ -167,7 +179,7 @@ void writeScreen(int dig[]){
     int charNum = 0;
     for(int i=1; i<3; ++i){
       for(int j=0; j<4; ++j){
-        lcd.createChar(charNum, nums[dig[i]][j]);
+        lcd.createChar(charNum, nums[outDig[i]][j]);
         ++charNum;
       }
     }
@@ -188,7 +200,13 @@ void writeScreen(int dig[]){
         }
       }
     }
-    //add the units
+    //add the interior temp
+    for(int i=0; i<2; ++i){
+      lcd.setCursor(i+6,1); //+6 offset for right side
+      lcd.write(inDig[i]);
+    }
+    
+    //add the units display
     lcd.setCursor(5,0);
     lcd.print((char)223);
     lcd.setCursor(6,0);
@@ -197,44 +215,4 @@ void writeScreen(int dig[]){
     else
       lcd.write("C");
   }
-}
-
-void writeScreen(int temp){
-  //basic, needs updated to handle 3 numbers, use loops
-  //also need to create the custom characters here
-
-
-  int k=0;
-  for(int i=0; i<=3; ++i){
-    for(int j=0; j<=1; ++j){
-      lcd.setCursor(i, j);
-      lcd.write(byte(k));
-      ++k;
-    }
-  }
-  
-  lcd.setCursor(0,0);
-  lcd.write(byte(0));
-  lcd.setCursor(1,0);
-  lcd.write(byte(1));
-  lcd.setCursor(0,1);
-  lcd.write(byte(2));
-  lcd.setCursor(1,1);
-  lcd.write(byte(3));
-  lcd.setCursor(2,0);
-  lcd.write(byte(4));
-  lcd.setCursor(3,0);
-  lcd.write(byte(5));
-  lcd.setCursor(2,1);
-  lcd.write(byte(6));
-  lcd.setCursor(3,1);
-  lcd.write(byte(7));
-
-  lcd.setCursor(5,0);
-  lcd.print((char)223);
-  lcd.setCursor(6,0);
-  if(unitF)
-    lcd.write("F");
-  else
-    lcd.write("C");
 }
