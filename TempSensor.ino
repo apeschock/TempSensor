@@ -44,7 +44,6 @@ boolean unitF = true;
 
 void loop() {
   //read sensor and store temps
-  //TODO: celcius on inside sensor
   float tempC = analogRead(outSensor) * (5.0/1024.0);
   tempC = ((tempC - .5)*100.0);
   float tempF = (tempC * 9.0/5.0) + 32.0;
@@ -53,7 +52,9 @@ void loop() {
   if(intTempDisp){
     inTemp = analogRead(inSensor) * (5.0/1024.0);
     inTemp = ((inTemp - .5)*100.0);
-    inTemp = (inTemp * 9.0/5.0) + 32.0;
+    if(unitF){
+      inTemp = (inTemp * 9.0/5.0) + 32.0;
+    }
   }
 
   float tempDisp;
@@ -78,12 +79,12 @@ void loop() {
     writeInTemp((int)inTemp);
   }
   
-  //Can sleep while waiting for an update if the screen doesn't need updated continuously.
+  //TODO Can sleep while waiting for an update if the screen doesn't need updated continuously.
   //Make this a real sleep for the cpu
   if(tempDisp < 102){
     delay(1000);
   }else{
-    //keep displaying to put up 3 numbers
+    //if 3 numbers need displayed, have to update screen continuously, cannot sleep
   }
 }
 
@@ -114,7 +115,7 @@ void writeScreen(int outDig[]){
   //set the custom chars
   //first digit will be a zero if not needed.
   if(outDig[0] == 1 || outDig[0] == -1){
-    //displaying 3 digits or negative sign
+    //TODO displaying 3 digits or negative sign
     
   }else{
     //2 digits
