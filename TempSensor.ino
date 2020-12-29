@@ -1,4 +1,5 @@
 #include <LiquidCrystal.h>
+#include <LowPower.h>
 #include "NumbersData.h"
 
 //flag for interior temperature display
@@ -68,10 +69,11 @@ void loop() {
     writeInTemp((int)inTemp);
   }
   
-  //TODO Can sleep while waiting for an update if the screen doesn't need updated continuously.
-  //Make this a real sleep for the cpu
+  //Can sleep while waiting for an update if the screen doesn't need updated continuously.
   if(tempOut < 102){
-    delay(1000);
+    //low power mode for 8 seconds (max for the 328P)
+    LowPower.idle(SLEEP_8S, ADC_OFF, TIMER2_OFF, TIMER1_OFF, TIMER0_OFF, 
+                SPI_OFF, USART0_OFF, TWI_OFF);
   }else{
     //if 3 numbers need displayed, have to update screen continuously, cannot sleep
   }
@@ -101,8 +103,10 @@ void changeUnit(){
 }
 
 void writeScreen(int outDig[]){
-  //set the custom chars
-  //first digit will be a zero if not needed.
+  //setting up the custom chars
+  //offset for a negative sign or another digit
+  int prefixOffset = 0;
+  //first digit in array will be a zero if not needed.
   if(outDig[0] == 1 || outDig[0] == -1){
     //TODO displaying 3 digits or negative sign
     
