@@ -2,8 +2,12 @@
 #include <LowPower.h>
 #include "NumbersData.h"
 
-//flag for interior temperature display
-const bool intTempDisp = true;
+//flags for modes
+/*this flag turns on the interior
+temp display section*/
+#define intTempDisp 1
+//this allows debugging via serial monitor
+#define debuggerMode 0
 
 //pin declarations
 const int button = 2;
@@ -19,7 +23,9 @@ LiquidCrystal lcd(lcdRs, lcdEn, lcd4, lcd5, lcd6, lcd7);
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
+  #if defined(debuggerMode)
+    Serial.begin(9600);
+  #endif
 
   //set up pins
   pinMode(button, INPUT_PULLUP);
@@ -51,31 +57,33 @@ void loop() {
     tempOut = (tempOut * 9.0/5.0) + 32.0;
   }
 
-  float inTemp;
-  if(intTempDisp){
+  //#if for the interior temp flag
+  #if defined(intTempDisp)
+    float inTemp;
     inTemp = analogRead(inSensor) * (5.0/1024.0);
     inTemp = ((inTemp - .5)*100.0);
     if(unitF){
       inTemp = (inTemp * 9.0/5.0) + 32.0;
     }
-  }
+    writeInTemp((int)inTemp);
+  #endif
+
+  //if the debugger is on, allow changing the temp via serial monitor
+  #if defined(debuggerMode)
+    tempOut = Serial.parseInt();
+  #endif
   
   //Get the different digits in an array
   int *outDigits = getValues((int)tempOut);
 
   //write screen every iteration incase of temp change, will sleep for a while to cut power.
   writeScreen(outDigits);
-  if(intTempDisp){
-    writeInTemp((int)inTemp);
-  }
   
   //Can sleep while waiting for an update if the screen doesn't need updated continuously.
   if(tempOut < 102){
     //low power mode for 8 seconds (max for the 328P)
     LowPower.idle(SLEEP_8S, ADC_OFF, TIMER2_OFF, TIMER1_OFF, TIMER0_OFF, 
                 SPI_OFF, USART0_OFF, TWI_OFF);
-  }else{
-    //if 3 numbers need displayed, have to update screen continuously, cannot sleep
   }
 }
 
@@ -106,63 +114,85 @@ void writeScreen(int outDig[]){
   //setting up the custom chars
   //offset for a negative sign or another digit
   int prefixOffset = 0;
+
+  //to move over to the end of the custom character set
+  int firstDigitPos = 4;
   //first digit in array will be a zero if not needed.
-  if(outDig[0] == 1 || outDig[0] == -1){
-    //TODO displaying 3 digits or negative sign
-    
-  }else{
-    //2 digits
-    //create the custom characters
-    int charNum = 0;
-    for(int i=1; i<3; ++i){
-      for(int j=0; j<4; ++j){
-        lcd.createChar(charNum, nums[outDig[i]][j]);
+  if(outDig[0] == 1){
+    //3 digits
+    for(int i=0; i<firstDigitPos; ++i){
+      //add 4 to do the last 4 custom characters
+      lcd.createChar(i+firstDigitPos, nums[1][i]);
+    }
+    //display the first digit
+    //custom char starts at position 4
+    for(int i=0; i<=1; ++i){
+      for(int j=0; j<=1; ++j){
+        lcd.setCursor(j,i);
+        lcd.write(byte(firstDigitPos));
+        firstDigitPos++;
+      }
+    }
+    prefixOffset += 2;
+  }else if(outDig[0] == -1){
+    //display a negative sign and increase offset.
+    lcd.setCursor(0,0);
+    lcd.write("_");
+    ++prefixOffset;
+  }
+  //2 digits
+  //create the custom characters
+  int charNum = 0;
+  for(int i=1; i<3; ++i){
+    for(int j=0; j<4; ++j){
+      lcd.createChar(charNum, nums[outDig[i]][j]);
+      ++charNum;
+    }
+  }
+
+  //display the custom characters
+  //charNum is for which byte needs chosen
+  charNum = 0;
+  //for 2 digits, increases by 2 to shift over a number space
+  for(int i=0; i<3; i+=2){
+    //j controls which row to place in
+    for(int j=0; j<=1; ++j){
+      //k is which column, which is added with i to offset a number, plus the prefix offset.
+      for(int k=0; k<=1; ++k){
+        lcd.setCursor(k+i+prefixOffset, j);
+        //write the byte to the display and increment
+        lcd.write(byte(charNum));
         ++charNum;
       }
     }
+  }
+  
+  //add the units display
+  lcd.setCursor(5,0);
+  lcd.print((char)223);
+  lcd.setCursor(6,0);
+  if(unitF)
+    lcd.write("F");
+  else
+    lcd.write("C");
+}
 
-    //display the custom characters
-    //charNum is for which byte needs chosen
-    charNum = 0;
-    //for 2 digits, increases by 2 to shift over a number space
-    for(int i=0; i<3; i+=2){
-      //j controls which row to place in
-      for(int j=0; j<=1; ++j){
-        //k is which column, which is added with i to offset a number.
-        for(int k=0; k<=1; ++k){
-          lcd.setCursor(k+i, j);
-          //write the byte to the display and increment
-          lcd.write(byte(charNum));
-          ++charNum;
-        }
-      }
+#if defined(intTempDisp)
+  void writeInTemp(int inTemp){
+    //add the interior temp to screen
+    int horiOffset = 6; //horizontal offset 6 moves to right side of screen
+    int vertOffset = 1; //vertical offset 1 for lower row
+    lcd.setCursor(horiOffset,vertOffset);
+    if(inTemp < 100 && inTemp > -10){
+      lcd.write(inTemp);
+      return;
     }
-    
-    //add the units display
-    lcd.setCursor(5,0);
-    lcd.print((char)223);
-    lcd.setCursor(6,0);
-    if(unitF)
-      lcd.write("F");
-    else
-      lcd.write("C");
+    if(inTemp >= 100){
+      lcd.write("99");
+      return;
+    }
+    if(inTemp <= -10){
+      lcd.write("-0");
+    }
   }
-}
-
-void writeInTemp(int inTemp){
-  //add the interior temp to screen
-  int horiOffset = 6; //horizontal offset 6 moves to right side of screen
-  int vertOffset = 1; //vertical offset 1 for lower row
-  lcd.setCursor(horiOffset,vertOffset);
-  if(inTemp < 100 && inTemp > -10){
-    lcd.write(inTemp);
-    return;
-  }
-  if(inTemp >= 100){
-    lcd.write("99");
-    return;
-  }
-  if(inTemp <= -10){
-    lcd.write("-0");
-  }
-}
+#endif
