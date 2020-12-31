@@ -70,7 +70,8 @@ void loop() {
 
   //if the debugger is on, allow changing the temp via serial monitor
   #if defined(debuggerMode)
-    tempOut = Serial.parseInt();
+    if(Serial.available()>0)
+      tempOut = Serial.parseInt();
   #endif
   
   //Get the different digits in an array
@@ -90,7 +91,7 @@ void loop() {
 //split number into separate digits
 //if negative, first value is -1
 int * getValues(int orig){
-  int digits [3];
+  int* digits = new int [3]; //TODO Delete this memory
   
   if(orig < 0){
     digits[0] = -1;
