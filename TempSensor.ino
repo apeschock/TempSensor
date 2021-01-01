@@ -167,11 +167,14 @@ void writeScreen(int outDig[]){
       }
     }
   }
+  //clear the memory
+  delete[] outDig;
+  outDig = NULL;
   
   //add the units display
-  lcd.setCursor(5,0);
-  lcd.print((char)223);
   lcd.setCursor(6,0);
+  lcd.print((char)223);
+  lcd.setCursor(7,0);
   if(unitF)
     lcd.write("F");
   else
