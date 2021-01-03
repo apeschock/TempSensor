@@ -1,13 +1,14 @@
 #include <LiquidCrystal.h>
 #include <LowPower.h>
 #include "NumbersData.h"
+#include "DebugUtils.h"
 
 //flags for modes
 /*this flag turns on the interior
 temp display section*/
-#define intTempDisp 1
-//this allows debugging via serial monitor
-#define debuggerMode 0
+#define intTempDisp
+//Debug mode is in the DebugUtils.h file
+//to enable debug mode, uncomment line 1
 
 //pin declarations
 const int button = 2;
@@ -22,10 +23,8 @@ const int lcd7 = 8;
 LiquidCrystal lcd(lcdRs, lcdEn, lcd4, lcd5, lcd6, lcd7);
 
 void setup() {
-  // put your setup code here, to run once:
-  #if defined(debuggerMode)
-    Serial.begin(9600);
-  #endif
+  //start serial monitor if debug on
+  DEBUG_BEGIN(9600);
 
   //set up pins
   pinMode(button, INPUT_PULLUP);
@@ -59,7 +58,7 @@ void loop() {
 
   //#if for the interior temp flag
   #if defined(intTempDisp)
-    float inTemp;
+    float inTemp = 0;
     inTemp = analogRead(inSensor) * (5.0/1024.0);
     inTemp = ((inTemp - .5)*100.0);
     if(unitF){
@@ -67,32 +66,36 @@ void loop() {
     }
     writeInTemp((int)inTemp);
   #endif
-
-  //if the debugger is on, allow changing the temp via serial monitor
-  #if defined(debuggerMode)
-    if(Serial.available()>0)
-      tempOut = Serial.parseInt();
-  #endif
   
   //Get the different digits in an array
   int *outDigits = getValues((int)tempOut);
 
+  //debug output TODO Figure the macro part out
+  DEBUG_PRINTLN("Outside temp sensor: " + (String)tempOut);
+  DEBUG_PRINT("Split Digits: ");
+  DEBUG_PRINT(outDigits[0]);
+  DEBUG_PRINT(outDigits[1]);
+  DEBUG_PRINTLN(outDigits[2]);
+
   //write screen every iteration incase of temp change, will sleep for a while to cut power.
   writeScreen(outDigits);
-  
-  //Can sleep while waiting for an update if the screen doesn't need updated continuously.
-  if(tempOut < 102){
-    //low power mode for 8 seconds (max for the 328P)
-    LowPower.idle(SLEEP_8S, ADC_OFF, TIMER2_OFF, TIMER1_OFF, TIMER0_OFF, 
-                SPI_OFF, USART0_OFF, TWI_OFF);
-  }
+
+  #ifndef DEBUG
+    //Can sleep while waiting for an update if the screen doesn't need updated continuously.
+    if(tempOut < 102){
+      //low power mode for 8 seconds (max for the 328P)
+      LowPower.idle(SLEEP_8S, ADC_OFF, TIMER2_OFF, TIMER1_OFF, TIMER0_OFF, 
+                  SPI_OFF, USART0_OFF, TWI_OFF);
+    }
+  #endif
 }
 
 //split number into separate digits
-//if negative, first value is -1
 int * getValues(int orig){
-  int* digits = new int [3]; //TODO Delete this memory
-  
+  //allocate memory to store the split digits
+  int* digits = new int [3];
+
+  //if negative, first value is -1
   if(orig < 0){
     digits[0] = -1;
     orig *= -1;
@@ -107,7 +110,7 @@ int * getValues(int orig){
 }
 
 void changeUnit(){
-  //switch the unit flag, then set the display to the new number and print it
+  //switch the unit flag when button pressed
   unitF = !unitF;
 }
 
@@ -116,29 +119,19 @@ void writeScreen(int outDig[]){
   //offset for a negative sign or another digit
   int prefixOffset = 0;
 
-  //to move over to the end of the custom character set
-  int firstDigitPos = 4;
   //first digit in array will be a zero if not needed.
   if(outDig[0] == 1){
     //3 digits
-    for(int i=0; i<firstDigitPos; ++i){
-      //add 4 to do the last 4 custom characters
-      lcd.createChar(i+firstDigitPos, nums[1][i]);
-    }
-    //display the first digit
-    //custom char starts at position 4
+    //display the first digit as a vertical line
     for(int i=0; i<=1; ++i){
-      for(int j=0; j<=1; ++j){
-        lcd.setCursor(j,i);
-        lcd.write(byte(firstDigitPos));
-        firstDigitPos++;
-      }
+      lcd.setCursor(0,i);
+      lcd.write(0xFFFF);
     }
-    prefixOffset += 2;
+    ++prefixOffset;
   }else if(outDig[0] == -1){
     //display a negative sign and increase offset.
     lcd.setCursor(0,0);
-    lcd.write("_");
+    lcd.print("_");
     ++prefixOffset;
   }
   //2 digits
@@ -183,20 +176,21 @@ void writeScreen(int outDig[]){
 
 #if defined(intTempDisp)
   void writeInTemp(int inTemp){
+    DEBUG_PRINT("Interior temp: ");
+    DEBUG_PRINTLN(inTemp);
+    DEBUG_PRINTLN();
     //add the interior temp to screen
     int horiOffset = 6; //horizontal offset 6 moves to right side of screen
     int vertOffset = 1; //vertical offset 1 for lower row
     lcd.setCursor(horiOffset,vertOffset);
     if(inTemp < 100 && inTemp > -10){
-      lcd.write(inTemp);
+      lcd.print(inTemp);
       return;
-    }
-    if(inTemp >= 100){
-      lcd.write("99");
+    }else if(inTemp >= 100){
+      lcd.print("99");
       return;
-    }
-    if(inTemp <= -10){
-      lcd.write("-0");
+    }else if(inTemp <= -10){
+      lcd.print("-0");
     }
   }
 #endif
