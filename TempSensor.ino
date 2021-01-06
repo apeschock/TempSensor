@@ -160,6 +160,18 @@ void writeScreen(int outDig[]){
       }
     }
   }
+
+  //clear the blank sections of the screen
+  //in case switched from a 3 digit to 2 digit num
+  if(prefixOffset == 0){
+    for(int i=prefixOffset + 4; i<=5; ++i){
+      for(int j=0; j<=1; ++j){
+        lcd.setCursor(i, j);
+        lcd.print(" ");
+      }
+    }
+  }
+  
   //clear the memory
   delete[] outDig;
   outDig = NULL;
