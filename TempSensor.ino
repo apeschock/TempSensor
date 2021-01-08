@@ -5,7 +5,9 @@
 
 //flags for modes
 /*this flag turns on the interior
-temp display section*/
+temp display section. To use the on board
+sensor if intTempDisp is off, switch in and out
+sensor pin declarations.*/
 #define intTempDisp
 //Debug mode is in the DebugUtils.h file
 //to enable debug mode, uncomment line 1
